@@ -13,19 +13,21 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
-#include "utils.h"
+#include "refutils.h"
 #include "common_types.h"
 
 // Use mean square error for comparing two tensors.
 #define MEASURE_MSE
+#define CblasColMajor 1
+#define CblasRowMajor 2
 
-void PrintMat(char *name, const float *ptr, int H, int W, CBLAS_LAYOUT layout) {
+void PrintMat(char *name, const float *ptr, int H, int W, int layout) {
     int r, c;
 
-    printf("--------------------\n");
+    //printf("--------------------\n");
     if(name != NULL)
         printf("%s\n", name);
-    printf("----------\n");
+    //printf("----------\n");
     for(r = 0; r < H; ++r) {
       float val;
       for(c = 0; c < W-1; ++c) {
@@ -47,12 +49,13 @@ void PrintMat(char *name, const float *ptr, int H, int W, CBLAS_LAYOUT layout) {
     printf("--------------------\n");
 }
 
-void PrintTensor(const float *data, TensorDim dim) {
+void PrintTensor(const char* tensorName,const float *data, TensorDim dim) {
+  printf("\noutput tensor is %s:\n", tensorName);
   for(int b = 0; b < dim.n; b++) {
     printf("***** Batch %d of %d *****\n", b, dim.n-1);
     for (int c = 0; c < dim.c; c++) {
       char name[256];
-      sprintf(name, "Ch %d of %d\n", c, dim.c-1);
+      sprintf(name, "Ch %d of %d", c, dim.c-1);
       PrintMat(name, data + (b*dim.c + c)*dim.h*dim.w, dim.h, dim.w,
                CblasRowMajor);
     }
@@ -76,9 +79,9 @@ void SeqInitF32(float *p_data, int N) {
 }
 
 
-bool TensorCompare(const float *t1, const float *t2, TensorDim dim) {
+int TensorCompare(const float *t1, const float *t2, TensorDim dim) {
 
-  bool ret = true;
+  int ret = 1;
   int N = TensorSize(dim);
   float mse = 0;
   for (int n = 0; n < dim.n; ++n) {
@@ -92,7 +95,7 @@ bool TensorCompare(const float *t1, const float *t2, TensorDim dim) {
           if (fabs(t1[addr] - t2[addr]) > 1e-4) {
             printf("Mismatch at [%d, %d, %d, %d]\n", n, c, h, w);
             printf("Tensor 1 val = %f\t Tensor 2 val = %f\n", t1[addr], t2[addr]);
-            ret = false;
+            ret = 0;
           }
 #endif
         }
@@ -102,7 +105,7 @@ bool TensorCompare(const float *t1, const float *t2, TensorDim dim) {
 #ifdef MEASURE_MSE
   mse = mse / N;
   if (mse > 1e-6) {
-    ret = false;
+    ret = 0;
   }
   printf("MSE = %f\n", mse);
 #endif

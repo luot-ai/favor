@@ -14,9 +14,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include "utils.h"
+#include "refutils.h"
 #include "conv_layers.h"
-
+#include "gem5/m5ops.h"
 /* Winograd transformation matrices for F(4, 3)
  *
  */
@@ -244,11 +244,11 @@ void WinogradConvLayer(const float *input, const float *weight,
   assert(out_dim.c % K_VEC == 0);
   assert(in_dim.c % C_VEC == 0);
 
-  int no_tiles_x = ceil((float)(in_dim.w + 2*pad - ker_size + 1)/Q_VEC);
-  int no_tiles_y = in_dim.h + 2*pad - ker_size + 1;
+  int no_tiles_x = ceil((float)(in_dim.w + 2*pad - ker_size + 1)/Q_VEC); //1
+  int no_tiles_y = in_dim.h + 2*pad - ker_size + 1;//2
   int filter_tiles_y = S_VEC;
-  int no_Cvec = ceil(in_dim.c / C_VEC);
-  int no_Kvec = ceil(out_dim.c / K_VEC);
+  int no_Cvec = ceil(in_dim.c / C_VEC);//1
+  int no_Kvec = ceil(out_dim.c / K_VEC);//1
 
   for (int v_omap = 0; v_omap < no_Kvec; v_omap++) {
     for (int o_h = 0; o_h < no_tiles_y; o_h++) {
@@ -267,16 +267,20 @@ void WinogradConvLayer(const float *input, const float *weight,
               int row = -pad + o_h + ftile;
               int col = -pad + tile_x * Q_VEC;
 
-              if (row < 0 || row >= in_dim.h) {
-                // all zeros
-                for (int f = 0; f < W_VEC; f++) {
+              if (row < 0 || row >= in_dim.h) 
+              {
+                for (int f = 0; f < W_VEC; f++) 
+                {
                   feat_in.d[f] = 0;
                 }
-              } else if (col < 0) {
+              } 
+              else if (col < 0) 
+              {
                 // zero prefix to the vector
                 int f;
                 for (f = 0; f < -col; f++) feat_in.d[f] = 0;
-                for (; f < W_VEC; f++) {
+                for (; f < W_VEC; f++) 
+                {
                   feat_in.d[f] = input[imap_offset + row * in_dim.w + col + f];
                 }
               } else if (col > (in_dim.w - W_VEC)) {
@@ -335,7 +339,7 @@ void WinogradConvLayer(const float *input, const float *weight,
 
 void TestVectoredConvLayer() {
   bool winograd = true;
-  bool print_outputs = false;
+  bool print_outputs = true;
   bool padding_en = false;
   bool bias_en = false;
 
@@ -343,10 +347,10 @@ void TestVectoredConvLayer() {
   int group = 1;
   int stride = 1;
   int N = 1;
-  int C = 12;
+  int C = 3;
   int H = 4;
   int W = 4;
-  int M = 128;
+  int M = 4;
   int pad = 0;
   if (padding_en) {
     pad = ker_size / 2;
@@ -357,8 +361,8 @@ void TestVectoredConvLayer() {
   TensorDim out_dim;
   out_dim.w = (in_dim.w + (pad + pad) - filt_dim.w) / stride + 1;
   out_dim.h = (in_dim.h + (pad + pad) - filt_dim.h) / stride + 1;
-  out_dim.c = M;
-  out_dim.n = in_dim.n;
+  out_dim.c = M;//output faeture channel num = filter channel number
+  out_dim.n = in_dim.n;//output batch = ifmap batch
   float *in_data = malloc(TensorSize(in_dim) * sizeof(float));
   float *filters = malloc(TensorSize(filt_dim) * sizeof(float));
   float *bias = malloc(out_dim.c * sizeof(float));
@@ -387,12 +391,12 @@ void TestVectoredConvLayer() {
                       group, pad, stride, bias_en, output);
   }
 
-  if (print_outputs) {
-    printf("Output of winograd/vectored method\n");
-    PrintTensor(output, out_dim);
-    printf("Output of reference implementation\n");
-    PrintTensor(ref_output, out_dim);
-  }
+  // if (print_outputs) {
+  //   printf("Output of winograd/vectored method\n");
+  //   PrintTensor(output, out_dim);
+  //   printf("Output of reference implementation\n");
+  //   PrintTensor(ref_output, out_dim);
+  // }
   if (TensorCompare(output, ref_output, out_dim)) {
     printf("PASS\n");
   } else {

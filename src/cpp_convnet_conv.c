@@ -62,7 +62,7 @@ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <cblas.h>
-#include "utils.h"
+#include "refutils.h"
 
 static inline int floor_divide(int a, int b) {
   if (a >= 0) return a / b;

@@ -14,7 +14,7 @@
 #include <cblas.h>
 #include "common_types.h"
 #include "data_reshape.h"
-#include "utils.h"
+#include "refutils.h"
 
 //
 // col_shift : +ve --> shift left overlap mat , -ve --> shift right overlap mat

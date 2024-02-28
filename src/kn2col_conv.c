@@ -15,7 +15,7 @@
 #include <string.h>
 #include "common_types.h"
 #include "data_reshape.h"
-#include "utils.h"
+#include "refutils.h"
 #include "conv_layers.h"
 
 bool Kn2ColConvLayer(const float *in_data, const float *filters,
